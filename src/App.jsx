@@ -45,6 +45,75 @@ const STAGES = ['lead', 'qualified', 'proposal', 'negotiation', 'won', 'lost']
 const STAGE_COLORS = { lead: '#64748b', qualified: '#0ea5e9', proposal: '#8b5cf6', negotiation: '#f59e0b', won: '#10b981', lost: '#ef4444' }
 const ACTIVITY_ICONS = { call: '📞', email: '✉️', meeting: '🤝', note: '📝' }
 
+// Vera Orders Pipeline
+const VERA_STAGES = ['received', 'stock-check', 'awaiting-approval', 'approved', 'rejected', 'fulfillment', 'shipped', 'complete']
+const VERA_STAGE_COLORS = {
+  'received': '#d97706',
+  'stock-check': '#0ea5e9',
+  'awaiting-approval': '#b8860b',
+  'approved': '#10b981',
+  'rejected': '#ef4444',
+  'fulfillment': '#8b5cf6',
+  'shipped': '#06b6d4',
+  'complete': '#059669'
+}
+const VERA_STAGE_LABELS = {
+  'received': 'Order Received',
+  'stock-check': 'Stock Check',
+  'awaiting-approval': 'Awaiting Vera Approval',
+  'approved': 'Approved',
+  'rejected': 'Rejected',
+  'fulfillment': 'Fulfillment',
+  'shipped': 'Shipped',
+  'complete': 'Complete'
+}
+const VERA_VARIANTS = [
+  'Vera Classic Gold 2/0',
+  'Vera Classic Gold 4/0',
+  'Vera Classic Gold 6/0',
+  'Vera Barbed Bronze 1/0',
+  'Vera Barbed Bronze 3/0',
+  'Vera Circle Hook Silver',
+  'Vera Treble Premium',
+  'Vera Weedless Master'
+]
+
+const sampleVeraOrders = [
+  { id: 'v1', orderNumber: 'VERA-001', contactId: '1', variant: 'Vera Classic Gold 4/0', quantity: 500, stage: 'awaiting-approval', veraApproved: false, notes: 'Bulk order for Wilson Angling Club annual event', createdAt: '2026-01-28', timeline: [
+    { date: '2026-01-28T09:00:00', event: 'Order received', user: 'System' },
+    { date: '2026-01-28T11:30:00', event: 'Stock verified - 500 units available', user: 'Staff' },
+    { date: '2026-01-28T14:00:00', event: 'Moved to Vera Approval queue', user: 'Staff' }
+  ]},
+  { id: 'v2', orderNumber: 'VERA-002', contactId: '3', variant: 'Vera Treble Premium', quantity: 1000, stage: 'approved', veraApproved: true, notes: 'Wholesale partnership initial order', createdAt: '2026-01-25', timeline: [
+    { date: '2026-01-25T10:00:00', event: 'Order received', user: 'System' },
+    { date: '2026-01-25T12:00:00', event: 'Stock verified', user: 'Staff' },
+    { date: '2026-01-26T09:00:00', event: 'Vera approval granted', user: 'Vera' },
+    { date: '2026-01-26T10:00:00', event: 'Order approved for fulfillment', user: 'Staff' }
+  ]},
+  { id: 'v3', orderNumber: 'VERA-003', contactId: '5', variant: 'Vera Circle Hook Silver', quantity: 200, stage: 'shipped', veraApproved: true, notes: 'Saltwater charter boat order', createdAt: '2026-01-20', timeline: [
+    { date: '2026-01-20T08:00:00', event: 'Order received', user: 'System' },
+    { date: '2026-01-20T10:00:00', event: 'Stock verified', user: 'Staff' },
+    { date: '2026-01-21T09:00:00', event: 'Vera approval granted', user: 'Vera' },
+    { date: '2026-01-22T14:00:00', event: 'Order packed', user: 'Staff' },
+    { date: '2026-01-23T09:00:00', event: 'Shipped via DPD - Tracking: DPD123456', user: 'Staff' }
+  ]},
+  { id: 'v4', orderNumber: 'VERA-004', contactId: '4', variant: 'Vera Weedless Master', quantity: 50, stage: 'complete', veraApproved: true, notes: 'Pike fishing specialist - repeat customer', createdAt: '2026-01-15', timeline: [
+    { date: '2026-01-15T11:00:00', event: 'Order received', user: 'System' },
+    { date: '2026-01-15T14:00:00', event: 'Stock verified', user: 'Staff' },
+    { date: '2026-01-16T10:00:00', event: 'Vera approval granted', user: 'Vera' },
+    { date: '2026-01-17T09:00:00', event: 'Order packed and shipped', user: 'Staff' },
+    { date: '2026-01-19T15:00:00', event: 'Delivered - Signed by E. Davies', user: 'System' }
+  ]},
+  { id: 'v5', orderNumber: 'VERA-005', contactId: '2', variant: 'Vera Barbed Bronze 1/0', quantity: 25, stage: 'received', veraApproved: false, notes: 'Beginner fly fisher - first Vera order', createdAt: '2026-02-01', timeline: [
+    { date: '2026-02-01T16:00:00', event: 'Order received', user: 'System' }
+  ]},
+  { id: 'v6', orderNumber: 'VERA-006', contactId: '1', variant: 'Vera Classic Gold 6/0', quantity: 100, stage: 'rejected', veraApproved: false, notes: 'Insufficient trade history for bulk premium order', createdAt: '2026-01-10', timeline: [
+    { date: '2026-01-10T09:00:00', event: 'Order received', user: 'System' },
+    { date: '2026-01-10T11:00:00', event: 'Stock verified', user: 'Staff' },
+    { date: '2026-01-11T14:00:00', event: 'Vera approval denied - customer needs more trade history', user: 'Vera' }
+  ]}
+]
+
 export default function App() {
   const [view, setView] = useState('dashboard')
   const [contacts, setContacts] = useState(() => storage.get('hl_contacts', sampleContacts))
@@ -58,10 +127,17 @@ export default function App() {
   const [draggedDeal, setDraggedDeal] = useState(null)
   const [showActivityForm, setShowActivityForm] = useState(false)
 
+  // Vera Orders state
+  const [veraOrders, setVeraOrders] = useState(() => storage.get('hl_vera_orders', sampleVeraOrders))
+  const [editingVeraOrder, setEditingVeraOrder] = useState(null)
+  const [draggedVeraOrder, setDraggedVeraOrder] = useState(null)
+  const [selectedVeraOrder, setSelectedVeraOrder] = useState(null)
+
   // Persist to localStorage
   useEffect(() => { storage.set('hl_contacts', contacts) }, [contacts])
   useEffect(() => { storage.set('hl_deals', deals) }, [deals])
   useEffect(() => { storage.set('hl_activities', activities) }, [activities])
+  useEffect(() => { storage.set('hl_vera_orders', veraOrders) }, [veraOrders])
 
   // KPIs
   const kpis = useMemo(() => {
@@ -138,6 +214,68 @@ export default function App() {
     setShowActivityForm(false)
   }
 
+  // Vera Order handlers
+  const saveVeraOrder = (order) => {
+    if (order.id) {
+      setVeraOrders(prev => prev.map(o => o.id === order.id ? order : o))
+    } else {
+      const orderNumber = 'VERA-' + String(veraOrders.length + 1).padStart(3, '0')
+      setVeraOrders(prev => [...prev, {
+        ...order,
+        id: genId(),
+        orderNumber,
+        createdAt: new Date().toISOString().split('T')[0],
+        timeline: [{ date: new Date().toISOString(), event: 'Order received', user: 'System' }]
+      }])
+    }
+    setEditingVeraOrder(null)
+  }
+
+  const deleteVeraOrder = (id) => {
+    if (confirm('Delete this Vera order?')) {
+      setVeraOrders(prev => prev.filter(o => o.id !== id))
+      setSelectedVeraOrder(null)
+    }
+  }
+
+  const handleVeraDragStart = (order) => setDraggedVeraOrder(order)
+  const handleVeraDragOver = (e) => e.preventDefault()
+  const handleVeraDrop = (stage) => {
+    if (draggedVeraOrder) {
+      // Prevent moving past awaiting-approval without Vera approval
+      if (!draggedVeraOrder.veraApproved && ['approved', 'fulfillment', 'shipped', 'complete'].includes(stage)) {
+        alert('This order requires Vera Sign of Approval before it can proceed.')
+        setDraggedVeraOrder(null)
+        return
+      }
+      // Auto-reject if moving to rejected
+      const newOrder = { ...draggedVeraOrder, stage }
+      if (stage === 'rejected') {
+        newOrder.veraApproved = false
+        newOrder.timeline = [...(newOrder.timeline || []), { date: new Date().toISOString(), event: 'Order rejected', user: 'Staff' }]
+      } else if (stage !== draggedVeraOrder.stage) {
+        newOrder.timeline = [...(newOrder.timeline || []), { date: new Date().toISOString(), event: `Moved to ${VERA_STAGE_LABELS[stage]}`, user: 'Staff' }]
+      }
+      setVeraOrders(prev => prev.map(o => o.id === draggedVeraOrder.id ? newOrder : o))
+      setDraggedVeraOrder(null)
+    }
+  }
+
+  const toggleVeraApproval = (orderId) => {
+    setVeraOrders(prev => prev.map(o => {
+      if (o.id === orderId) {
+        const newApproved = !o.veraApproved
+        const newTimeline = [...(o.timeline || []), {
+          date: new Date().toISOString(),
+          event: newApproved ? 'Vera approval granted' : 'Vera approval revoked',
+          user: 'Vera'
+        }]
+        return { ...o, veraApproved: newApproved, timeline: newTimeline }
+      }
+      return o
+    }))
+  }
+
   const getContactName = (id) => contacts.find(c => c.id === id)?.name || 'Unknown'
   const getDealTitle = (id) => deals.find(d => d.id === id)?.title || ''
 
@@ -157,15 +295,16 @@ export default function App() {
             { id: 'dashboard', icon: '📊', label: 'Dashboard' },
             { id: 'contacts', icon: '👥', label: 'Contacts' },
             { id: 'deals', icon: '💼', label: 'Deals' },
+            { id: 'vera-orders', icon: '🪝', label: 'Vera Orders', premium: true },
             { id: 'activities', icon: '📋', label: 'Activities' },
           ].map(item => (
             <div
               key={item.id}
-              style={{ ...styles.navItem, ...(view === item.id ? styles.navItemActive : {}) }}
-              onClick={() => { setView(item.id); setSelectedContact(null); setEditingContact(null); setEditingDeal(null) }}
+              style={{ ...styles.navItem, ...(view === item.id ? styles.navItemActive : {}), ...(item.premium ? styles.navItemPremium : {}) }}
+              onClick={() => { setView(item.id); setSelectedContact(null); setEditingContact(null); setEditingDeal(null); setEditingVeraOrder(null); setSelectedVeraOrder(null) }}
             >
               <span style={styles.navIcon}>{item.icon}</span>
-              <span className="nav-label">{item.label}</span>
+              <span className="nav-label" style={item.premium ? styles.premiumLabel : {}}>{item.label}</span>
             </div>
           ))}
         </nav>
@@ -380,6 +519,143 @@ export default function App() {
           />
         )}
 
+        {/* Vera Orders Kanban View */}
+        {view === 'vera-orders' && !editingVeraOrder && !selectedVeraOrder && (
+          <>
+            <div style={styles.headerRow}>
+              <div style={styles.veraTitleRow}>
+                <h1 style={styles.veraPageTitle}>Vera Orders</h1>
+                <span style={styles.veraBadge}>Premium Line</span>
+              </div>
+              <button style={styles.veraBtn} onClick={() => setEditingVeraOrder({ contactId: '', variant: VERA_VARIANTS[0], quantity: 1, stage: 'received', veraApproved: false, notes: '' })}>
+                + New Vera Order
+              </button>
+            </div>
+            <div style={styles.veraKanban}>
+              {VERA_STAGES.map(stage => (
+                <div
+                  key={stage}
+                  style={{ ...styles.veraKanbanColumn, ...(stage === 'awaiting-approval' ? styles.veraApprovalColumn : {}) }}
+                  onDragOver={handleVeraDragOver}
+                  onDrop={() => handleVeraDrop(stage)}
+                >
+                  <div style={styles.veraKanbanHeader}>
+                    <span style={{ ...styles.stageDot, background: VERA_STAGE_COLORS[stage] }}></span>
+                    {VERA_STAGE_LABELS[stage]}
+                    <span style={styles.kanbanCount}>{veraOrders.filter(o => o.stage === stage).length}</span>
+                  </div>
+                  {stage === 'awaiting-approval' && (
+                    <div style={styles.veraApprovalNote}>Requires Vera Sign of Approval</div>
+                  )}
+                  <div style={styles.kanbanCards}>
+                    {veraOrders.filter(o => o.stage === stage).map(order => (
+                      <div
+                        key={order.id}
+                        style={{ ...styles.veraKanbanCard, ...(order.veraApproved ? styles.veraApprovedCard : {}) }}
+                        draggable
+                        onDragStart={() => handleVeraDragStart(order)}
+                        onClick={() => setSelectedVeraOrder(order)}
+                      >
+                        <div style={styles.veraCardHeader}>
+                          <span style={styles.veraOrderNumber}>{order.orderNumber}</span>
+                          {order.veraApproved && <span style={styles.veraApprovedBadge}>Approved</span>}
+                        </div>
+                        <div style={styles.veraCardVariant}>{order.variant}</div>
+                        <div style={styles.kanbanCardMeta}>
+                          <span>{getContactName(order.contactId)}</span>
+                          <span style={styles.veraQuantity}>×{order.quantity}</span>
+                        </div>
+                        {stage === 'awaiting-approval' && (
+                          <div style={styles.veraApprovalBox} onClick={(e) => { e.stopPropagation(); toggleVeraApproval(order.id) }}>
+                            <input
+                              type="checkbox"
+                              checked={order.veraApproved}
+                              onChange={() => {}}
+                              style={styles.veraCheckbox}
+                            />
+                            <span style={styles.veraApprovalLabel}>Vera Sign of Approval</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Vera Order Detail View */}
+        {view === 'vera-orders' && selectedVeraOrder && !editingVeraOrder && (
+          <>
+            <button style={styles.backBtn} onClick={() => setSelectedVeraOrder(null)}>← Back to Vera Orders</button>
+            <div style={styles.veraDetailHeader}>
+              <div>
+                <div style={styles.veraOrderTitleRow}>
+                  <h1 style={styles.veraPageTitle}>{selectedVeraOrder.orderNumber}</h1>
+                  <span style={{ ...styles.stageBadge, background: VERA_STAGE_COLORS[selectedVeraOrder.stage] }}>{VERA_STAGE_LABELS[selectedVeraOrder.stage]}</span>
+                  {selectedVeraOrder.veraApproved && <span style={styles.veraApprovedBadge}>Vera Approved</span>}
+                </div>
+                <div style={styles.veraSubtitle}>{selectedVeraOrder.variant}</div>
+              </div>
+              <div style={styles.btnGroup}>
+                <button style={styles.veraBtn} onClick={() => setEditingVeraOrder(selectedVeraOrder)}>Edit</button>
+                <button style={{ ...styles.btn, background: '#ef4444' }} onClick={() => deleteVeraOrder(selectedVeraOrder.id)}>Delete</button>
+              </div>
+            </div>
+            <div style={styles.detailGrid}>
+              <div style={styles.veraCard}>
+                <h3 style={styles.veraCardTitle}>Order Details</h3>
+                <div style={styles.infoRow}><span style={styles.infoLabel}>Customer:</span> {getContactName(selectedVeraOrder.contactId)}</div>
+                <div style={styles.infoRow}><span style={styles.infoLabel}>Product:</span> {selectedVeraOrder.variant}</div>
+                <div style={styles.infoRow}><span style={styles.infoLabel}>Quantity:</span> {selectedVeraOrder.quantity} units</div>
+                <div style={styles.infoRow}><span style={styles.infoLabel}>Order Date:</span> {formatDate(selectedVeraOrder.createdAt)}</div>
+                <div style={styles.infoRow}><span style={styles.infoLabel}>Status:</span> {VERA_STAGE_LABELS[selectedVeraOrder.stage]}</div>
+                {selectedVeraOrder.notes && <div style={styles.infoRow}><span style={styles.infoLabel}>Notes:</span> {selectedVeraOrder.notes}</div>}
+                {selectedVeraOrder.stage === 'awaiting-approval' && (
+                  <div style={styles.veraApprovalSection}>
+                    <div style={styles.veraApprovalBox} onClick={() => toggleVeraApproval(selectedVeraOrder.id)}>
+                      <input
+                        type="checkbox"
+                        checked={selectedVeraOrder.veraApproved}
+                        onChange={() => {}}
+                        style={styles.veraCheckbox}
+                      />
+                      <span style={styles.veraApprovalLabelLarge}>Vera Sign of Approval</span>
+                    </div>
+                    <p style={styles.veraApprovalHint}>Check this box to grant Vera approval for this premium order</p>
+                  </div>
+                )}
+              </div>
+              <div style={styles.veraCard}>
+                <h3 style={styles.veraCardTitle}>Order Timeline</h3>
+                <div style={styles.veraTimeline}>
+                  {(selectedVeraOrder.timeline || []).slice().reverse().map((event, idx) => (
+                    <div key={idx} style={styles.veraTimelineItem}>
+                      <div style={styles.veraTimelineDot}></div>
+                      <div style={styles.veraTimelineContent}>
+                        <div style={styles.veraTimelineEvent}>{event.event}</div>
+                        <div style={styles.veraTimelineMeta}>{event.user} • {formatDateTime(event.date)}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Vera Order Form */}
+        {view === 'vera-orders' && editingVeraOrder && (
+          <VeraOrderForm
+            order={editingVeraOrder}
+            contacts={contacts}
+            onSave={saveVeraOrder}
+            onDelete={editingVeraOrder.id ? () => deleteVeraOrder(editingVeraOrder.id) : null}
+            onCancel={() => { setEditingVeraOrder(null); if (!editingVeraOrder.id) setSelectedVeraOrder(null) }}
+          />
+        )}
+
         {/* Activities View */}
         {view === 'activities' && (
           <>
@@ -566,6 +842,71 @@ function ActivityForm({ contacts, deals, onSave, onCancel }) {
   )
 }
 
+// Vera Order Form Component
+function VeraOrderForm({ order, contacts, onSave, onDelete, onCancel }) {
+  const [form, setForm] = useState(order)
+  const update = (field, value) => setForm(prev => ({ ...prev, [field]: value }))
+
+  return (
+    <div style={styles.veraCard}>
+      <h2 style={styles.veraCardTitle}>{order.id ? 'Edit Vera Order' : 'New Vera Order'}</h2>
+      <div style={styles.formGrid}>
+        <div style={styles.formGroup}>
+          <label style={styles.label}>Customer *</label>
+          <select style={styles.input} value={form.contactId} onChange={e => update('contactId', e.target.value)}>
+            <option value="">Select customer...</option>
+            {contacts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </div>
+        <div style={styles.formGroup}>
+          <label style={styles.label}>Product Variant *</label>
+          <select style={styles.input} value={form.variant} onChange={e => update('variant', e.target.value)}>
+            {VERA_VARIANTS.map(v => <option key={v} value={v}>{v}</option>)}
+          </select>
+        </div>
+        <div style={styles.formGroup}>
+          <label style={styles.label}>Quantity *</label>
+          <input style={styles.input} type="number" min="1" value={form.quantity} onChange={e => update('quantity', Number(e.target.value))} />
+        </div>
+        {order.id && (
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Stage</label>
+            <select style={styles.input} value={form.stage} onChange={e => update('stage', e.target.value)}>
+              {VERA_STAGES.map(s => <option key={s} value={s}>{VERA_STAGE_LABELS[s]}</option>)}
+            </select>
+          </div>
+        )}
+        <div style={{ ...styles.formGroup, gridColumn: '1 / -1' }}>
+          <label style={styles.label}>Notes</label>
+          <textarea style={{ ...styles.input, minHeight: '80px' }} value={form.notes} onChange={e => update('notes', e.target.value)} placeholder="Order notes..." />
+        </div>
+        {order.id && form.stage === 'awaiting-approval' && (
+          <div style={{ ...styles.formGroup, gridColumn: '1 / -1' }}>
+            <div style={styles.veraApprovalFormBox}>
+              <label style={styles.veraApprovalFormLabel}>
+                <input
+                  type="checkbox"
+                  checked={form.veraApproved}
+                  onChange={e => update('veraApproved', e.target.checked)}
+                  style={styles.veraCheckbox}
+                />
+                Vera Sign of Approval
+              </label>
+              <p style={styles.veraApprovalHint}>Required to move order past the approval stage</p>
+            </div>
+          </div>
+        )}
+      </div>
+      <div style={styles.formActions}>
+        {onDelete && <button style={{ ...styles.btn, background: '#ef4444' }} onClick={onDelete}>Delete</button>}
+        <div style={{ flex: 1 }}></div>
+        <button style={styles.btnSecondary} onClick={onCancel}>Cancel</button>
+        <button style={styles.veraBtn} onClick={() => onSave(form)} disabled={!form.contactId || !form.variant || !form.quantity}>Save Order</button>
+      </div>
+    </div>
+  )
+}
+
 // Metric Card Component
 function MetricCard({ label, value, icon, color }) {
   return (
@@ -652,6 +993,44 @@ const styles = {
   timelineDate: { fontSize: '0.85rem', color: '#64748b' },
   timelineDesc: { fontSize: '0.95rem', marginBottom: '8px' },
   timelineMeta: { fontSize: '0.85rem', color: '#64748b' },
+  // Vera Orders Premium Styles
+  navItemPremium: { background: 'linear-gradient(135deg, rgba(184, 134, 11, 0.1) 0%, rgba(218, 165, 32, 0.1) 100%)' },
+  premiumLabel: { background: 'linear-gradient(135deg, #b8860b 0%, #daa520 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: 600 },
+  veraTitleRow: { display: 'flex', alignItems: 'center', gap: '12px' },
+  veraPageTitle: { fontSize: '1.8rem', fontWeight: 700, color: '#0c4a5e', marginBottom: '0', background: 'linear-gradient(135deg, #b8860b 0%, #0c4a5e 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' },
+  veraBadge: { background: 'linear-gradient(135deg, #b8860b 0%, #daa520 100%)', color: 'white', padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' },
+  veraBtn: { background: 'linear-gradient(135deg, #b8860b 0%, #8b6914 100%)', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 500, transition: 'transform 0.2s, box-shadow 0.2s', boxShadow: '0 2px 4px rgba(184, 134, 11, 0.3)' },
+  veraKanban: { display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '20px' },
+  veraKanbanColumn: { minWidth: '200px', flex: '1', background: 'rgba(255,255,255,0.6)', borderRadius: '12px', padding: '12px', border: '1px solid rgba(184, 134, 11, 0.1)' },
+  veraApprovalColumn: { background: 'linear-gradient(135deg, rgba(184, 134, 11, 0.1) 0%, rgba(255, 215, 0, 0.05) 100%)', border: '2px solid #b8860b' },
+  veraKanbanHeader: { display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, marginBottom: '8px', fontSize: '0.85rem', color: '#0c4a5e' },
+  veraApprovalNote: { fontSize: '0.7rem', color: '#b8860b', marginBottom: '8px', fontStyle: 'italic' },
+  veraKanbanCard: { background: 'white', padding: '14px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', cursor: 'grab', transition: 'transform 0.2s, box-shadow 0.2s', border: '1px solid #e2e8f0' },
+  veraApprovedCard: { borderColor: '#b8860b', boxShadow: '0 2px 8px rgba(184, 134, 11, 0.2)' },
+  veraCardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' },
+  veraOrderNumber: { fontWeight: 600, fontSize: '0.85rem', color: '#b8860b' },
+  veraApprovedBadge: { background: 'linear-gradient(135deg, #b8860b 0%, #daa520 100%)', color: 'white', padding: '2px 8px', borderRadius: '10px', fontSize: '0.65rem', fontWeight: 600 },
+  veraCardVariant: { fontSize: '0.9rem', fontWeight: 500, marginBottom: '8px', color: '#1e293b' },
+  veraQuantity: { fontWeight: 600, color: '#b8860b' },
+  veraApprovalBox: { marginTop: '10px', padding: '8px', background: 'linear-gradient(135deg, rgba(184, 134, 11, 0.1) 0%, rgba(255, 215, 0, 0.05) 100%)', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', border: '1px dashed #b8860b' },
+  veraCheckbox: { width: '18px', height: '18px', accentColor: '#b8860b', cursor: 'pointer' },
+  veraApprovalLabel: { fontSize: '0.75rem', fontWeight: 600, color: '#b8860b' },
+  veraApprovalLabelLarge: { fontSize: '0.9rem', fontWeight: 600, color: '#b8860b' },
+  veraDetailHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' },
+  veraOrderTitleRow: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' },
+  veraSubtitle: { color: '#64748b', fontSize: '1rem' },
+  veraCard: { background: 'linear-gradient(135deg, #fffbeb 0%, white 30%)', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 8px rgba(184, 134, 11, 0.1)', marginBottom: '20px', border: '1px solid rgba(184, 134, 11, 0.2)' },
+  veraCardTitle: { fontSize: '1.1rem', fontWeight: 600, color: '#b8860b', marginBottom: '16px' },
+  veraApprovalSection: { marginTop: '16px', padding: '16px', background: 'linear-gradient(135deg, rgba(184, 134, 11, 0.15) 0%, rgba(255, 215, 0, 0.1) 100%)', borderRadius: '8px', border: '2px dashed #b8860b' },
+  veraApprovalHint: { color: '#8b6914', fontSize: '0.8rem', marginTop: '8px', fontStyle: 'italic' },
+  veraTimeline: { display: 'flex', flexDirection: 'column', gap: '0' },
+  veraTimelineItem: { display: 'flex', gap: '12px', padding: '12px 0', borderLeft: '2px solid #b8860b', marginLeft: '8px', paddingLeft: '20px', position: 'relative' },
+  veraTimelineDot: { position: 'absolute', left: '-7px', top: '16px', width: '12px', height: '12px', borderRadius: '50%', background: '#b8860b', border: '2px solid white' },
+  veraTimelineContent: { flex: 1 },
+  veraTimelineEvent: { fontWeight: 500, fontSize: '0.9rem', marginBottom: '4px' },
+  veraTimelineMeta: { fontSize: '0.8rem', color: '#64748b' },
+  veraApprovalFormBox: { padding: '16px', background: 'linear-gradient(135deg, rgba(184, 134, 11, 0.1) 0%, rgba(255, 215, 0, 0.05) 100%)', borderRadius: '8px', border: '2px dashed #b8860b' },
+  veraApprovalFormLabel: { display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontWeight: 600, color: '#b8860b', fontSize: '1rem' },
 }
 
 // Additional CSS for hover states and responsive
@@ -666,6 +1045,9 @@ const cssStyles = `
   input:focus, select:focus, textarea:focus { border-color: #0d6e8c !important; }
 
   .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+  /* Vera Orders Premium Hover States */
+  .vera-nav-item:hover { background: linear-gradient(135deg, rgba(184, 134, 11, 0.15) 0%, rgba(218, 165, 32, 0.15) 100%) !important; }
 
   /* Wave pattern background */
   body::before {
@@ -689,5 +1071,7 @@ const cssStyles = `
     .hide-mobile { display: none !important; }
     .kanban { flex-direction: column; }
     .kanban-column { min-width: 100% !important; }
+    .vera-kanban { flex-direction: column; }
+    .vera-kanban > div { min-width: 100% !important; }
   }
 `
