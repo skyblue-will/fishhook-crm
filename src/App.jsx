@@ -270,6 +270,14 @@ export default function App() {
           event: newApproved ? 'Vera approval granted' : 'Vera approval revoked',
           user: 'Vera'
         }]
+        if (newApproved && o.stage === 'awaiting-approval') {
+          newTimeline.push({
+            date: new Date().toISOString(),
+            event: 'Auto-advanced to Approved stage',
+            user: 'System'
+          })
+          return { ...o, veraApproved: newApproved, stage: 'approved', timeline: newTimeline }
+        }
         return { ...o, veraApproved: newApproved, timeline: newTimeline }
       }
       return o
