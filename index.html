@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hook & Line Tackle - CRM</title>
+    <style>
+        :root {
+            --primary: #0d6e8c;
+            --primary-dark: #094d63;
+            --accent: #14b8a6;
+            --bg: #f0f9ff;
+            --sidebar: #0c4a5e;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+        
+        [data-theme="dark"] {
+            --bg: #0f172a;
+            --sidebar: #020617;
+            --card: #1e293b;
+            --text: #f1f5f9;
+            --text-light: #94a3b8;
+            --border: #334155;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; }
+        
+        .sidebar { width: 240px; background: var(--sidebar); color: white; padding: 20px 0; position: fixed; height: 100vh; }
+        .logo { padding: 0 20px 30px; font-size: 1.4rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+        .logo span { color: var(--accent); }
+        .nav-item { padding: 12px 20px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: all 0.2s; border-left: 3px solid transparent; }
+        .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.1); border-left-color: var(--accent); }
+        .nav-item svg { width: 20px; height: 20px; }
+        
+        .main { margin-left: 240px; flex: 1; padding: 24px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .header h1 { font-size: 1.8rem; }
+        .theme-toggle { background: var(--card); border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; cursor: pointer; color: var(--text); }
+        
+        .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 24px; }
+        .metric-card { background: var(--card); padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .metric-label { color: var(--text-light); font-size: 0.875rem; margin-bottom: 8px; }
+        .metric-value { font-size: 2rem; font-weight: 700; color: var(--primary); }
+        .metric-change { font-size: 0.75rem; margin-top: 4px; }
+        .metric-change.up { color: var(--success); }
+        .metric-change.down { color: var(--danger); }
+        
+        .section { background: var(--card); border-radius: 12px; padding: 20px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .section h2 { font-size: 1.25rem; }
+        .btn { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.875rem; }
+        .btn:hover { background: var(--primary-dark); }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { color: var(--text-light); font-weight: 500; font-size: 0.875rem; }
+        
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 500; }
+        .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        .badge-info { background: #dbeafe; color: #1e40af; }
+        
+        .stock-low { color: var(--danger); font-weight: 600; }
+        .stock-ok { color: var(--success); }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .search { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; width: 250px; background: var(--bg); color: var(--text); }
+        
+        .chart { height: 200px; display: flex; align-items: flex-end; gap: 8px; padding: 20px 0; }
+        .bar { background: linear-gradient(to top, var(--primary), var(--accent)); border-radius: 4px 4px 0 0; flex: 1; transition: height 0.3s; }
+        .chart-labels { display: flex; justify-content: space-between; color: var(--text-light); font-size: 0.75rem; }
+        
+        @media (max-width: 1024px) {
+            .metrics { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .sidebar { width: 60px; }
+            .sidebar .logo span, .nav-item span { display: none; }
+            .main { margin-left: 60px; }
+            .metrics { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="logo">🎣 <span>Hook & Line</span></div>
+        <nav>
+            <div class="nav-item active" onclick="showTab('dashboard')">
+                <svg fill="currentColor" viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                <span>Dashboard</span>
+            </div>
+            <div class="nav-item" onclick="showTab('products')">
+                <svg fill="currentColor" viewBox="0 0 24 24"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/></svg>
+                <span>Products</span>
+            </div>
+            <div class="nav-item" onclick="showTab('customers')">
+                <svg fill="currentColor" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                <span>Customers</span>
+            </div>
+            <div class="nav-item" onclick="showTab('orders')">
+                <svg fill="currentColor" viewBox="0 0 24 24"><path d="M18 6h-2c0-2.21-1.79-4-4-4S8 3.79 8 6H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6-2c1.1 0 2 .9 2 2h-4c0-1.1.9-2 2-2zm6 16H6V8h2v2c0 .55.45 1 1 1s1-.45 1-1V8h4v2c0 .55.45 1 1 1s1-.45 1-1V8h2v12z"/></svg>
+                <span>Orders</span>
+            </div>
+            <div class="nav-item" onclick="showTab('email')">
+                <svg fill="currentColor" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                <span>Email</span>
+            </div>
+        </nav>
+    </aside>
+    
+    <main class="main">
+        <div class="header">
+            <h1 id="page-title">Dashboard</h1>
+            <button class="theme-toggle" onclick="toggleTheme()">🌙 Dark Mode</button>
+        </div>
+        
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="metrics">
+                <div class="metric-card">
+                    <div class="metric-label">Monthly Revenue</div>
+                    <div class="metric-value">£12,847</div>
+                    <div class="metric-change up">↑ 12% vs last month</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Total Orders</div>
+                    <div class="metric-value">156</div>
+                    <div class="metric-change up">↑ 8% vs last month</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Active Customers</div>
+                    <div class="metric-value">89</div>
+                    <div class="metric-change up">↑ 5 new this week</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Low Stock Alerts</div>
+                    <div class="metric-value" style="color: var(--warning)">7</div>
+                    <div class="metric-change down">⚠️ Needs attention</div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>Sales This Week</h2>
+                <div class="chart">
+                    <div class="bar" style="height: 65%"></div>
+                    <div class="bar" style="height: 80%"></div>
+                    <div class="bar" style="height: 45%"></div>
+                    <div class="bar" style="height: 90%"></div>
+                    <div class="bar" style="height: 70%"></div>
+                    <div class="bar" style="height: 55%"></div>
+                    <div class="bar" style="height: 85%"></div>
+                </div>
+                <div class="chart-labels">
+                    <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>Recent Orders</h2>
+                <table>
+                    <tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th></tr>
+                    <tr><td>#1247</td><td>James Wilson</td><td>3</td><td>£45.99</td><td><span class="badge badge-success">Shipped</span></td></tr>
+                    <tr><td>#1246</td><td>Sarah Chen</td><td>5</td><td>£89.50</td><td><span class="badge badge-info">Processing</span></td></tr>
+                    <tr><td>#1245</td><td>Mike Thompson</td><td>2</td><td>£23.00</td><td><span class="badge badge-warning">Pending</span></td></tr>
+                    <tr><td>#1244</td><td>Emma Davies</td><td>7</td><td>£156.00</td><td><span class="badge badge-success">Delivered</span></td></tr>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Products Tab -->
+        <div id="products" class="tab-content">
+            <div class="section">
+                <div class="section-header">
+                    <input type="text" class="search" placeholder="Search products...">
+                    <button class="btn">+ Add Product</button>
+                </div>
+                <table>
+                    <tr><th>SKU</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Supplier</th></tr>
+                    <tr><td>FH-001</td><td>Mustad Classic J Hook #4</td><td>Freshwater</td><td>£2.99</td><td class="stock-ok">124</td><td>Mustad UK</td></tr>
+                    <tr><td>FH-002</td><td>Circle Hook 5/0 (Pack of 10)</td><td>Saltwater</td><td>£8.99</td><td class="stock-low">3</td><td>Gamakatsu</td></tr>
+                    <tr><td>FH-003</td><td>Barbless Carp Hook #8</td><td>Freshwater</td><td>£4.50</td><td class="stock-ok">67</td><td>Korda</td></tr>
+                    <tr><td>FH-004</td><td>Saltwater Jig Hook 2/0</td><td>Saltwater</td><td>£6.99</td><td class="stock-low">8</td><td>Owner</td></tr>
+                    <tr><td>FH-005</td><td>Fly Tying Hook #12 (100pk)</td><td>Fly Fishing</td><td>£15.99</td><td class="stock-ok">45</td><td>Partridge</td></tr>
+                    <tr><td>FH-006</td><td>Treble Hook Chrome #6</td><td>Lure</td><td>£3.49</td><td class="stock-ok">89</td><td>VMC</td></tr>
+                    <tr><td>FH-007</td><td>Weedless Bass Hook 3/0</td><td>Freshwater</td><td>£5.99</td><td class="stock-low">5</td><td>Owner</td></tr>
+                    <tr><td>FH-008</td><td>Salmon Single Hook #2</td><td>Saltwater</td><td>£4.99</td><td class="stock-ok">156</td><td>Partridge</td></tr>
+                    <tr><td>FH-009</td><td>Dry Fly Hook #16 (50pk)</td><td>Fly Fishing</td><td>£12.99</td><td class="stock-ok">34</td><td>Tiemco</td></tr>
+                    <tr><td>FH-010</td><td>Pike Trace Hook 4/0</td><td>Freshwater</td><td>£7.99</td><td class="stock-low">2</td><td>Fox</td></tr>
+                    <tr><td>FH-011</td><td>Bait Holder Hook #2</td><td>General</td><td>£1.99</td><td class="stock-ok">234</td><td>Mustad UK</td></tr>
+                    <tr><td>FH-012</td><td>Assist Hook 4/0 (2pk)</td><td>Saltwater</td><td>£9.99</td><td class="stock-ok">78</td><td>Shout!</td></tr>
+                    <tr><td>FH-013</td><td>Nymph Hook #14 (25pk)</td><td>Fly Fishing</td><td>£8.49</td><td class="stock-low">4</td><td>Hends</td></tr>
+                    <tr><td>FH-014</td><td>Octopus Hook 1/0 (20pk)</td><td>Saltwater</td><td>£6.49</td><td class="stock-ok">112</td><td>Gamakatsu</td></tr>
+                    <tr><td>FH-015</td><td>Specimen Carp Hook #6</td><td>Freshwater</td><td>£5.49</td><td class="stock-ok">56</td><td>Korda</td></tr>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Customers Tab -->
+        <div id="customers" class="tab-content">
+            <div class="section">
+                <div class="section-header">
+                    <input type="text" class="search" placeholder="Search customers...">
+                    <button class="btn">+ Add Customer</button>
+                </div>
+                <table>
+                    <tr><th>Name</th><th>Email</th><th>Phone</th><th>Orders</th><th>Total Spent</th><th>Tags</th></tr>
+                    <tr><td>James Wilson</td><td>james.w@email.com</td><td>07700 123456</td><td>12</td><td>£456.00</td><td><span class="badge badge-success">VIP</span></td></tr>
+                    <tr><td>Sarah Chen</td><td>s.chen@email.com</td><td>07700 234567</td><td>8</td><td>£289.50</td><td><span class="badge badge-info">Regular</span></td></tr>
+                    <tr><td>Mike Thompson</td><td>mike.t@email.com</td><td>07700 345678</td><td>3</td><td>£67.00</td><td><span class="badge badge-warning">New</span></td></tr>
+                    <tr><td>Emma Davies</td><td>emma.d@email.com</td><td>07700 456789</td><td>25</td><td>£1,234.00</td><td><span class="badge badge-success">VIP</span></td></tr>
+                    <tr><td>Tom Richards</td><td>tom.r@email.com</td><td>07700 567890</td><td>6</td><td>£178.50</td><td><span class="badge badge-info">Regular</span></td></tr>
+                    <tr><td>Lucy Parker</td><td>lucy.p@email.com</td><td>07700 678901</td><td>15</td><td>£567.00</td><td><span class="badge badge-success">VIP</span></td></tr>
+                    <tr><td>David Brown</td><td>d.brown@email.com</td><td>07700 789012</td><td>2</td><td>£45.00</td><td><span class="badge badge-warning">New</span></td></tr>
+                    <tr><td>Rachel Green</td><td>rachel.g@email.com</td><td>07700 890123</td><td>9</td><td>£312.00</td><td><span class="badge badge-info">Regular</span></td></tr>
+                    <tr><td>Chris Martin</td><td>chris.m@email.com</td><td>07700 901234</td><td>18</td><td>£789.00</td><td><span class="badge badge-success">VIP</span></td></tr>
+                    <tr><td>Hannah White</td><td>h.white@email.com</td><td>07700 012345</td><td>4</td><td>£98.00</td><td><span class="badge badge-info">Regular</span></td></tr>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Orders Tab -->
+        <div id="orders" class="tab-content">
+            <div class="section">
+                <div class="section-header">
+                    <input type="text" class="search" placeholder="Search orders...">
+                    <select class="search" style="width: 150px;">
+                        <option>All Status</option>
+                        <option>Pending</option>
+                        <option>Processing</option>
+                        <option>Shipped</option>
+                        <option>Delivered</option>
+                    </select>
+                </div>
+                <table>
+                    <tr><th>Order ID</th><th>Date</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th></tr>
+                    <tr><td>#1247</td><td>02 Feb 2026</td><td>James Wilson</td><td>3</td><td>£45.99</td><td><span class="badge badge-success">Shipped</span></td></tr>
+                    <tr><td>#1246</td><td>02 Feb 2026</td><td>Sarah Chen</td><td>5</td><td>£89.50</td><td><span class="badge badge-info">Processing</span></td></tr>
+                    <tr><td>#1245</td><td>02 Feb 2026</td><td>Mike Thompson</td><td>2</td><td>£23.00</td><td><span class="badge badge-warning">Pending</span></td></tr>
+                    <tr><td>#1244</td><td>01 Feb 2026</td><td>Emma Davies</td><td>7</td><td>£156.00</td><td><span class="badge badge-success">Delivered</span></td></tr>
+                    <tr><td>#1243</td><td>01 Feb 2026</td><td>Tom Richards</td><td>2</td><td>£34.99</td><td><span class="badge badge-success">Delivered</span></td></tr>
+                    <tr><td>#1242</td><td>01 Feb 2026</td><td>Lucy Parker</td><td>4</td><td>£67.50</td><td><span class="badge badge-success">Shipped</span></td></tr>
+                    <tr><td>#1241</td><td>31 Jan 2026</td><td>David Brown</td><td>1</td><td>£12.99</td><td><span class="badge badge-success">Delivered</span></td></tr>
+                    <tr><td>#1240</td><td>31 Jan 2026</td><td>Rachel Green</td><td>6</td><td>£98.00</td><td><span class="badge badge-success">Delivered</span></td></tr>
+                    <tr><td>#1239</td><td>31 Jan 2026</td><td>Chris Martin</td><td>3</td><td>£45.00</td><td><span class="badge badge-success">Delivered</span></td></tr>
+                    <tr><td>#1238</td><td>30 Jan 2026</td><td>Hannah White</td><td>2</td><td>£29.99</td><td><span class="badge badge-success">Delivered</span></td></tr>
+                    <tr><td>#1237</td><td>30 Jan 2026</td><td>James Wilson</td><td>5</td><td>£78.50</td><td><span class="badge badge-success">Delivered</span></td></tr>
+                    <tr><td>#1236</td><td>29 Jan 2026</td><td>Emma Davies</td><td>8</td><td>£189.00</td><td><span class="badge badge-success">Delivered</span></td></tr>
+                    <tr><td>#1235</td><td>29 Jan 2026</td><td>Sarah Chen</td><td>3</td><td>£42.00</td><td><span class="badge badge-success">Delivered</span></td></tr>
+                    <tr><td>#1234</td><td>28 Jan 2026</td><td>Lucy Parker</td><td>4</td><td>£56.99</td><td><span class="badge badge-success">Delivered</span></td></tr>
+                    <tr><td>#1233</td><td>28 Jan 2026</td><td>Chris Martin</td><td>2</td><td>£34.00</td><td><span class="badge badge-success">Delivered</span></td></tr>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Email Tab -->
+        <div id="email" class="tab-content">
+            <div class="section">
+                <h2>Email Templates</h2>
+                <table>
+                    <tr><th>Template</th><th>Subject</th><th>Last Used</th><th>Actions</th></tr>
+                    <tr><td>Order Confirmation</td><td>Your Hook & Line order #{{order_id}}</td><td>Today</td><td><button class="btn">Edit</button></td></tr>
+                    <tr><td>Shipping Notification</td><td>Your order is on its way!</td><td>Today</td><td><button class="btn">Edit</button></td></tr>
+                    <tr><td>Welcome Email</td><td>Welcome to Hook & Line Tackle!</td><td>Yesterday</td><td><button class="btn">Edit</button></td></tr>
+                </table>
+            </div>
+            
+            <div class="section">
+                <h2>Compose Email</h2>
+                <div style="display: flex; flex-direction: column; gap: 12px; max-width: 600px;">
+                    <input type="text" class="search" style="width: 100%;" placeholder="To: customer@email.com">
+                    <input type="text" class="search" style="width: 100%;" placeholder="Subject">
+                    <textarea class="search" style="width: 100%; height: 150px; resize: vertical;" placeholder="Write your message..."></textarea>
+                    <button class="btn" style="align-self: flex-start;">Send Email</button>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>Recent Emails</h2>
+                <table>
+                    <tr><th>Date</th><th>To</th><th>Subject</th><th>Status</th></tr>
+                    <tr><td>02 Feb 2026</td><td>james.w@email.com</td><td>Your order #1247 has shipped</td><td><span class="badge badge-success">Sent</span></td></tr>
+                    <tr><td>02 Feb 2026</td><td>s.chen@email.com</td><td>Order confirmation #1246</td><td><span class="badge badge-success">Sent</span></td></tr>
+                    <tr><td>01 Feb 2026</td><td>emma.d@email.com</td><td>Your order has been delivered!</td><td><span class="badge badge-success">Sent</span></td></tr>
+                    <tr><td>01 Feb 2026</td><td>d.brown@email.com</td><td>Welcome to Hook & Line Tackle!</td><td><span class="badge badge-success">Sent</span></td></tr>
+                </table>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.currentTarget.classList.add('active');
+            const titles = { dashboard: 'Dashboard', products: 'Products', customers: 'Customers', orders: 'Orders', email: 'Email' };
+            document.getElementById('page-title').textContent = titles[tabId];
+        }
+        
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.querySelector('.theme-toggle');
+            if (body.dataset.theme === 'dark') {
+                body.dataset.theme = '';
+                btn.textContent = '🌙 Dark Mode';
+            } else {
+                body.dataset.theme = 'dark';
+                btn.textContent = '☀️ Light Mode';
+            }
+        }
+    </script>
+</body>
+</html>
